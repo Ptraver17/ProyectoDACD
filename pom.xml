@@ -34,6 +34,11 @@
             <artifactId>mysql-connector-java</artifactId>
             <version>8.0.33</version> <!-- Usa la versión más reciente -->
         </dependency>
+        <dependency>
+            <groupId>org.json</groupId>
+            <artifactId>json</artifactId>
+            <version>20240303</version>
+        </dependency>
 
     </dependencies>
 </project>

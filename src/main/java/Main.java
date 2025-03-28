@@ -1,33 +1,41 @@
 import java.sql.Connection;
-import java.sql.Statement;
 
 public class Main {
     public static void main(String[] args) {
         createTables();
 
-        FootballCall.fetchFootballData();
-        NewsCall.fetchNewsData();
+        // 🔹 Obtener los partidos de la jornada específica
+        FootballCall.fetchMatchesForMatchday();
+
+        // 🔹 Obtener noticias relacionadas con estos partidos
+        for (Match match : DatabaseManager.getAllMatches()) {
+            NewsCall.fetchNewsForMatch(match.getMatchId(), match.getHomeTeam(), match.getAwayTeam());
+        }
     }
 
     private static void createTables() {
-        String footballTable = "CREATE TABLE IF NOT EXISTS football_data (" +
+        String matchesTable = "CREATE TABLE IF NOT EXISTS matches (" +
                 "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
-                "competition_name TEXT, " +
-                "area_name TEXT)";
+                "match_id TEXT UNIQUE, " +
+                "home_team TEXT, " +
+                "away_team TEXT, " +
+                "match_date TEXT)";
 
-        String newsTable = "CREATE TABLE IF NOT EXISTS news_data (" +
+        String newsTable = "CREATE TABLE IF NOT EXISTS news (" +
                 "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                "match_id TEXT, " +
                 "title TEXT, " +
                 "description TEXT, " +
-                "url TEXT)";
+                "url TEXT, " +
+                "FOREIGN KEY (match_id) REFERENCES matches (match_id))";
 
         try (Connection conn = DatabaseManager.connect();
-             Statement stmt = conn.createStatement()) {
-            stmt.execute(footballTable);
+             java.sql.Statement stmt = conn.createStatement()) {
+            stmt.execute(matchesTable);
             stmt.execute(newsTable);
-            System.out.println("Tablas creadas correctamente.");
+            System.out.println("✅ Tablas creadas correctamente.");
         } catch (Exception e) {
-            System.out.println("Error creando tablas: " + e.getMessage());
+            System.out.println("❌ Error creando tablas: " + e.getMessage());
         }
     }
 }

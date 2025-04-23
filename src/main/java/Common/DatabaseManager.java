@@ -1,3 +1,5 @@
+package Common;
+
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -47,7 +49,6 @@ public class DatabaseManager {
         }
     }
 
-    // 🚀 NUEVA FUNCIÓN: Obtener todos los partidos guardados en la BD
     public static List<Match> getAllMatches() {
         List<Match> matches = new ArrayList<>();
         String sql = "SELECT match_id, home_team, away_team, match_date FROM matches";
@@ -68,5 +69,29 @@ public class DatabaseManager {
             System.out.println("Error obteniendo partidos: " + e.getMessage());
         }
         return matches;
+    }
+
+    // 🚀 NUEVA FUNCIÓN: Obtener todas las noticias guardadas en la BD
+    public static List<NewsItem> getAllNews() {
+        List<NewsItem> newsList = new ArrayList<>();
+        String sql = "SELECT match_id, title, description, url FROM news";
+
+        try (Connection conn = connect();
+             PreparedStatement pstmt = conn.prepareStatement(sql);
+             ResultSet rs = pstmt.executeQuery()) {
+
+            while (rs.next()) {
+                String matchId = rs.getString("match_id");
+                String title = rs.getString("title");
+                String description = rs.getString("description");
+                String url = rs.getString("url");
+
+                newsList.add(new NewsItem(matchId, title, description, url));
+            }
+        } catch (SQLException e) {
+            System.out.println("Error obteniendo noticias: " + e.getMessage());
+        }
+
+        return newsList;
     }
 }

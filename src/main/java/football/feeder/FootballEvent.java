@@ -1,67 +1,45 @@
-package football.feeder;
+import java.io.Serializable;
 
-public class FootballEvent {
-    private String ts;
-    private String ss;
-    private String matchId;
-    private String homeTeam;
-    private String awayTeam;
-    private String matchDate;
+public class FootballEvent implements Serializable {
+    private static final long serialVersionUID = 1L;
 
-    public FootballEvent(String ts, String ss, String matchId, String homeTeam, String awayTeam, String matchDate) {
-        this.ts = ts;
-        this.ss = ss;
-        this.matchId = matchId;
-        this.homeTeam = homeTeam;
-        this.awayTeam = awayTeam;
-        this.matchDate = matchDate;
+    public enum EventType {
+        MATCH,
+        NEWS
     }
 
-    public String getTs() {
-        return ts;
+    private EventType type;
+    private Match match;
+    private NewsItem news;
+
+    public FootballEvent(Match match) {
+        this.type = EventType.MATCH;
+        this.match = match;
     }
 
-    public void setTs(String ts) {
-        this.ts = ts;
+    public FootballEvent(NewsItem news) {
+        this.type = EventType.NEWS;
+        this.news = news;
     }
 
-    public String getSs() {
-        return ss;
+    public EventType getType() {
+        return type;
     }
 
-    public void setSs(String ss) {
-        this.ss = ss;
+    public Match getMatch() {
+        return match;
     }
 
-    public String getMatchId() {
-        return matchId;
+    public NewsItem getNews() {
+        return news;
     }
 
-    public void setMatchId(String matchId) {
-        this.matchId = matchId;
-    }
-
-    public String getHomeTeam() {
-        return homeTeam;
-    }
-
-    public void setHomeTeam(String homeTeam) {
-        this.homeTeam = homeTeam;
-    }
-
-    public String getAwayTeam() {
-        return awayTeam;
-    }
-
-    public void setAwayTeam(String awayTeam) {
-        this.awayTeam = awayTeam;
-    }
-
-    public String getMatchDate() {
-        return matchDate;
-    }
-
-    public void setMatchDate(String matchDate) {
-        this.matchDate = matchDate;
+    @Override
+    public String toString() {
+        return "FootballEvent{" +
+                "type=" + type +
+                ", match=" + match +
+                ", news=" + news +
+                '}';
     }
 }

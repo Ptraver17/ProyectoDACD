@@ -1,58 +1,62 @@
-package eventstore.builder;
-
 import javax.jms.*;
-
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
 import org.apache.activemq.ActiveMQConnectionFactory;
-import java.io.*;
-import java.nio.file.*;
-import java.time.*;
-import java.time.format.DateTimeFormatter;
 
 public class EventStoreBuilder {
 
-    public static void startListener(String topicName) {
+    private static final String BROKER_URL = "tcp://localhost:61616";
+    private static final String TOPIC_NAME = "futbol.eventos";
+
+    public static void main(String[] args) {
         try {
-            ConnectionFactory factory = new ActiveMQConnectionFactory("tcp://localhost:61616");
-            Connection connection = factory.createConnection();
-            connection.setClientID("EventStore-" + topicName); // durable subscriber
+            // Crear conexión con ActiveMQ
+            ConnectionFactory connectionFactory = new ActiveMQConnectionFactory(BROKER_URL);
+            Connection connection = connectionFactory.createConnection();
             connection.start();
 
+            // Crear sesión sin transacciones, con auto-ack
             Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-            Topic topic = session.createTopic(topicName);
-            MessageConsumer consumer = session.createDurableSubscriber(topic, topicName + "-sub");
+            Destination destination = session.createTopic(TOPIC_NAME);
+            MessageConsumer consumer = session.createConsumer(destination);
+
+            System.out.println("🎧 Esperando mensajes en el tópico '" + TOPIC_NAME + "'...");
 
             consumer.setMessageListener(message -> {
-                if (message instanceof TextMessage) {
+                if (message instanceof ObjectMessage) {
                     try {
-                        String json = ((TextMessage) message).getText();
-                        saveEventToFile(topicName, json);
-                    } catch (Exception e) {
-                        System.out.println("❌ Error procesando mensaje: " + e.getMessage());
+                        Object payload = ((ObjectMessage) message).getObject();
+
+                        if (payload instanceof Match) {
+                            Match match = (Match) payload;
+                            DatabaseManager.insertMatch(
+                                    match.getMatchId(),
+                                    match.getHomeTeam(),
+                                    match.getAwayTeam(),
+                                    match.getMatchDate()
+                            );
+                            System.out.println("✅ Partido almacenado: " + match);
+                        } else if (payload instanceof NewsItem) {
+                            NewsItem news = (NewsItem) payload;
+                            DatabaseManager.insertNews(
+                                    news.getMatchId(),
+                                    news.getTitle(),
+                                    news.getDescription(),
+                                    news.getUrl()
+                            );
+                            System.out.println("📰 Noticia almacenada: " + news);
+                        } else {
+                            System.out.println("⚠️ Tipo de mensaje no reconocido.");
+                        }
+
+                    } catch (JMSException e) {
+                        System.err.println("❌ Error procesando mensaje: " + e.getMessage());
                     }
+                } else {
+                    System.out.println("⚠️ Mensaje recibido no es de tipo ObjectMessage.");
                 }
             });
 
         } catch (Exception e) {
-            System.out.println("❌ Error en suscripción: " + e.getMessage());
+            System.err.println("❌ Error conectando al broker: " + e.getMessage());
         }
-    }
-
-    private static void saveEventToFile(String topic, String json) throws IOException {
-        Gson gson = new Gson();
-        JsonObject obj = gson.fromJson(json, JsonObject.class);
-        String ss = obj.get("ss").getAsString();
-        String ts = obj.get("ts").getAsString();
-
-        String date = LocalDate.parse(ts.substring(0, 10)).format(DateTimeFormatter.BASIC_ISO_DATE); // YYYYMMDD
-
-        Path dir = Paths.get("eventstore", topic, ss);
-        Files.createDirectories(dir);
-
-        Path file = dir.resolve(date + ".events");
-        Files.write(file, (json + System.lineSeparator()).getBytes(), StandardOpenOption.CREATE, StandardOpenOption.APPEND);
-
-        System.out.println("📝 Evento guardado: " + file);
     }
 }

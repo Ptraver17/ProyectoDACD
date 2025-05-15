@@ -1,5 +1,3 @@
-package Common;
-
 public class NewsItem {
     private String matchId;
     private String title;
@@ -27,5 +25,15 @@ public class NewsItem {
 
     public String getUrl() {
         return url;
+    }
+
+    @Override
+    public String toString() {
+        return "NewsItem{" +
+                "matchId='" + matchId + '\'' +
+                ", title='" + title + '\'' +
+                ", description='" + description + '\'' +
+                ", url='" + url + '\'' +
+                '}';
     }
 }

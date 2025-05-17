@@ -1,4 +1,10 @@
-public class NewsItem {
+package Common;
+
+import java.io.Serializable;
+
+public class NewsItem implements Serializable {
+    private static final long serialVersionUID = 1L;
+
     private String matchId;
     private String title;
     private String description;
@@ -26,9 +32,8 @@ public class NewsItem {
     public String getUrl() {
         return url;
     }
-
     @Override
-    public String toString() {
+    public String toString(){
         return "NewsItem{" +
                 "matchId='" + matchId + '\'' +
                 ", title='" + title + '\'' +

@@ -1,62 +1,83 @@
-import javax.jms.*;
+package eventstore.builder;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.activemq.ActiveMQConnectionFactory;
 
-public class EventStoreBuilder {
+import javax.jms.*;
 
+public class EventStoreBuilder {
     private static final String BROKER_URL = "tcp://localhost:61616";
-    private static final String TOPIC_NAME = "futbol.eventos";
+    private static final String FOOTBALL_TOPIC = "football.matches";
+    private static final String NEWS_TOPIC = "news.events";
 
     public static void main(String[] args) {
         try {
-            // Crear conexión con ActiveMQ
-            ConnectionFactory connectionFactory = new ActiveMQConnectionFactory(BROKER_URL);
-            Connection connection = connectionFactory.createConnection();
+            ConnectionFactory factory = new ActiveMQConnectionFactory(BROKER_URL);
+            Connection connection = factory.createConnection();
             connection.start();
 
-            // Crear sesión sin transacciones, con auto-ack
             Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-            Destination destination = session.createTopic(TOPIC_NAME);
-            MessageConsumer consumer = session.createConsumer(destination);
 
-            System.out.println("🎧 Esperando mensajes en el tópico '" + TOPIC_NAME + "'...");
+            // Listener para partidos
+            Topic footballTopic = session.createTopic(FOOTBALL_TOPIC);
+            MessageConsumer footballConsumer = session.createConsumer(footballTopic);
+            footballConsumer.setMessageListener(message -> handleMatchMessage(message));
 
-            consumer.setMessageListener(message -> {
-                if (message instanceof ObjectMessage) {
-                    try {
-                        Object payload = ((ObjectMessage) message).getObject();
+            // Listener para noticias
+            Topic newsTopic = session.createTopic(NEWS_TOPIC);
+            MessageConsumer newsConsumer = session.createConsumer(newsTopic);
+            newsConsumer.setMessageListener(message -> handleNewsMessage(message));
 
-                        if (payload instanceof Match) {
-                            Match match = (Match) payload;
-                            DatabaseManager.insertMatch(
-                                    match.getMatchId(),
-                                    match.getHomeTeam(),
-                                    match.getAwayTeam(),
-                                    match.getMatchDate()
-                            );
-                            System.out.println("✅ Partido almacenado: " + match);
-                        } else if (payload instanceof NewsItem) {
-                            NewsItem news = (NewsItem) payload;
-                            DatabaseManager.insertNews(
-                                    news.getMatchId(),
-                                    news.getTitle(),
-                                    news.getDescription(),
-                                    news.getUrl()
-                            );
-                            System.out.println("📰 Noticia almacenada: " + news);
-                        } else {
-                            System.out.println("⚠️ Tipo de mensaje no reconocido.");
-                        }
-
-                    } catch (JMSException e) {
-                        System.err.println("❌ Error procesando mensaje: " + e.getMessage());
-                    }
-                } else {
-                    System.out.println("⚠️ Mensaje recibido no es de tipo ObjectMessage.");
-                }
-            });
+            System.out.println("🎧 Escuchando eventos en topics:");
+            System.out.println(" - " + FOOTBALL_TOPIC);
+            System.out.println(" - " + NEWS_TOPIC);
 
         } catch (Exception e) {
-            System.err.println("❌ Error conectando al broker: " + e.getMessage());
+            System.out.println("❌ Error en EventStoreBuilder: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    private static void handleMatchMessage(Message message) {
+        try {
+            if (message instanceof TextMessage) {
+                String json = ((TextMessage) message).getText();
+                ObjectMapper mapper = new ObjectMapper();
+                Match match = mapper.readValue(json, Match.class);
+
+                DatabaseManager.insertMatch(
+                        match.getMatchId(),
+                        match.getHomeTeam(),
+                        match.getAwayTeam(),
+                        match.getMatchDate(),
+                        match.getMatchday()
+                );
+
+                System.out.println("✅ Partido guardado: " + match);
+            }
+        } catch (Exception e) {
+            System.out.println("❌ Error procesando partido: " + e.getMessage());
+        }
+    }
+
+    private static void handleNewsMessage(Message message) {
+        try {
+            if (message instanceof TextMessage) {
+                String json = ((TextMessage) message).getText();
+                ObjectMapper mapper = new ObjectMapper();
+                NewsEvent news = mapper.readValue(json, NewsEvent.class);
+
+                DatabaseManager.insertNews(
+                        news.getMatchId(),
+                        news.getTitle(),
+                        news.getDescription(),
+                        news.getUrl()
+                );
+
+                System.out.println("📰 Noticia guardada: " + news.getTitle());
+            }
+        } catch (Exception e) {
+            System.out.println("❌ Error procesando noticia: " + e.getMessage());
         }
     }
 }

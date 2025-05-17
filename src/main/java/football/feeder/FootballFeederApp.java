@@ -1,14 +1,22 @@
+package football.feeder;
+
 public class FootballFeederApp {
     public static void main(String[] args) {
-        System.out.println("🚀 Iniciando FootballFeederApp...");
+        String leagueCode = "PD";
+        int matchday = 30;
 
-        try {
-            // Ejecutar el feeder para obtener partidos y enviarlos como mensajes
-            FootballFeeder.main(args);
-            System.out.println("✅ Partidos enviados correctamente.");
-        } catch (Exception e) {
-            System.out.println("❌ Error al ejecutar FootballFeederApp: " + e.getMessage());
-            e.printStackTrace();
+        if (args.length > 0) {
+            leagueCode = args[0].toUpperCase();
         }
+
+        if (args.length > 1) {
+            try {
+                matchday = Integer.parseInt(args[1]);
+            } catch (NumberFormatException e) {
+                matchday = 30;
+            }
+        }
+
+        FootballFeeder.sendMatchesForMatchday(leagueCode, matchday);
     }
 }

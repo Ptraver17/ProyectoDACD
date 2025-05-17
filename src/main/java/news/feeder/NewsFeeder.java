@@ -1,26 +1,19 @@
 import com.fasterxml.jackson.databind.ObjectMapper;
-
-import javax.jms.Connection;
-import javax.jms.MessageProducer;
-import javax.jms.Session;
-import javax.jms.TextMessage;
-import javax.jms.Topic;
 import org.apache.activemq.ActiveMQConnectionFactory;
 
+import javax.jms.*;
 import java.util.List;
 
 public class NewsFeeder {
-
     private static final String BROKER_URL = "tcp://localhost:61616";
     private static final String TOPIC_NAME = "news.events";
 
-    public void sendNewsEvents() {
+    public static void sendNewsForMatchday(int matchday) {
         try {
-            // Obtener las noticias de la base de datos
-            List<NewsItem> newsList = DatabaseManager.getAllNews();
+            List<Match> matches = DatabaseManager.getMatchesByMatchday(matchday);
+            ObjectMapper mapper = new ObjectMapper();
 
-            // Conexión con ActiveMQ
-            ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(BROKER_URL);
+            ConnectionFactory connectionFactory = new ActiveMQConnectionFactory(BROKER_URL);
             Connection connection = connectionFactory.createConnection();
             connection.start();
 
@@ -28,21 +21,25 @@ public class NewsFeeder {
             Topic topic = session.createTopic(TOPIC_NAME);
             MessageProducer producer = session.createProducer(topic);
 
-            ObjectMapper mapper = new ObjectMapper();
+            for (Match match : matches) {
+                List<NewsItem> newsList = DatabaseManager.getAllNews(); // O filtra si es necesario
 
-            for (NewsItem news : newsList) {
-                NewsEvent event = new NewsEvent(
-                        news.getMatchId(),
-                        news.getTitle(),
-                        news.getDescription(),
-                        news.getUrl()
-                );
+                for (NewsItem news : newsList) {
+                    if (news.getMatchId().equals(match.getMatchId())) {
+                        NewsEvent event = new NewsEvent(
+                                news.getMatchId(),
+                                news.getTitle(),
+                                news.getDescription(),
+                                news.getUrl()
+                        );
 
-                String json = mapper.writeValueAsString(event);
-                TextMessage message = session.createTextMessage(json);
-                producer.send(message);
+                        String json = mapper.writeValueAsString(event);
+                        TextMessage message = session.createTextMessage(json);
+                        producer.send(message);
 
-                System.out.println("✅ Enviada noticia: " + json);
+                        System.out.println("📰 Noticia enviada: " + news.getTitle());
+                    }
+                }
             }
 
             producer.close();
@@ -50,7 +47,7 @@ public class NewsFeeder {
             connection.close();
 
         } catch (Exception e) {
-            System.out.println("❌ Error enviando eventos de noticias: " + e.getMessage());
+            System.out.println("❌ Error en NewsFeeder: " + e.getMessage());
             e.printStackTrace();
         }
     }

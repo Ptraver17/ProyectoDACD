@@ -1,4 +1,8 @@
-public class NewsEvent {
+import java.io.Serializable;
+
+public class NewsEvent implements Serializable {
+    private static final long serialVersionUID = 1L;
+
     private String matchId;
     private String title;
     private String description;

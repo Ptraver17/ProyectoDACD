@@ -1,3 +1,5 @@
+package news.feeder;
+
 import java.io.Serializable;
 
 public class NewsEvent implements Serializable {

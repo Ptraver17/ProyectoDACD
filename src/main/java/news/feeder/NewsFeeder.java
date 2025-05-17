@@ -1,16 +1,22 @@
+package news.feeder;
+
+
+import Common.DatabaseManager;
+import Common.Match;
+import Common.NewsItem;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.jms.*;
 import org.apache.activemq.ActiveMQConnectionFactory;
 
-import javax.jms.*;
 import java.util.List;
 
 public class NewsFeeder {
     private static final String BROKER_URL = "tcp://localhost:61616";
     private static final String TOPIC_NAME = "news.events";
 
-    public static void sendNewsForMatchday(int matchday) {
+    public static void sendNewsForMatchday(String league, int matchday) {
         try {
-            List<Match> matches = DatabaseManager.getMatchesByMatchday(matchday);
+            List<Match> matches = DatabaseManager.getMatchesByLeagueAndMatchday(league, matchday);
             ObjectMapper mapper = new ObjectMapper();
 
             ConnectionFactory connectionFactory = new ActiveMQConnectionFactory(BROKER_URL);

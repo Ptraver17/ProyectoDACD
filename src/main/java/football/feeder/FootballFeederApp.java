@@ -1,22 +1,32 @@
 package football.feeder;
 
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.Timer;
+import java.util.TimerTask;
+
 public class FootballFeederApp {
+    private static final String LEAGUE_CODE = "PD";
+    private static final int MATCHDAY = 30;
+
     public static void main(String[] args) {
-        String leagueCode = "PD";
-        int matchday = 30;
-
-        if (args.length > 0) {
-            leagueCode = args[0].toUpperCase();
-        }
-
-        if (args.length > 1) {
-            try {
-                matchday = Integer.parseInt(args[1]);
-            } catch (NumberFormatException e) {
-                matchday = 30;
+        Timer timer = new Timer();
+        TimerTask task = new TimerTask() {
+            @Override
+            public void run() {
+                FootballFeeder.sendMatchesForMatchday(LEAGUE_CODE, MATCHDAY);
             }
+        };
+
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime nextRun = now.withHour(12).withMinute(0).withSecond(0).withNano(0);
+        if (!now.isBefore(nextRun)) {
+            nextRun = now.plusHours(12);
         }
 
-        FootballFeeder.sendMatchesForMatchday(leagueCode, matchday);
+        long initialDelay = ChronoUnit.MILLIS.between(now, nextRun);
+        long testPeriod = 5 * 60 * 1000;
+
+        timer.scheduleAtFixedRate(task, initialDelay, testPeriod);
     }
 }

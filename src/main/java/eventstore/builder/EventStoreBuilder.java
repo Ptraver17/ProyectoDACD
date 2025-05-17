@@ -1,9 +1,11 @@
 package eventstore.builder;
 
+import Common.DatabaseManager;
+import Common.Match;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.jms.*;
+import news.feeder.NewsEvent;
 import org.apache.activemq.ActiveMQConnectionFactory;
-
-import javax.jms.*;
 
 public class EventStoreBuilder {
     private static final String BROKER_URL = "tcp://localhost:61616";
@@ -50,7 +52,8 @@ public class EventStoreBuilder {
                         match.getHomeTeam(),
                         match.getAwayTeam(),
                         match.getMatchDate(),
-                        match.getMatchday()
+                        match.getMatchday(),
+                        match.getLeague()
                 );
 
                 System.out.println("✅ Partido guardado: " + match);

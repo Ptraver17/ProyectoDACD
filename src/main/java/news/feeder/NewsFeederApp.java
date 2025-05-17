@@ -1,17 +1,22 @@
+package news.feeder;
+
+import java.util.Timer;
+import java.util.TimerTask;
+
 public class NewsFeederApp {
+    private static final String LEAGUE_CODE = "PD";
+    private static final int MATCHDAY = 30;
+
     public static void main(String[] args) {
-        int matchday = 30; // Valor por defecto
-
-        if (args.length > 0) {
-            try {
-                matchday = Integer.parseInt(args[0]);
-            } catch (NumberFormatException e) {
-                System.out.println("⚠️ Jornada inválida, usando jornada por defecto: " + matchday);
+        Timer timer = new Timer();
+        TimerTask task = new TimerTask() {
+            @Override
+            public void run() {
+                NewsFeeder.sendNewsForMatchday(LEAGUE_CODE, MATCHDAY);
             }
-        }
+        };
 
-        System.out.println("🚀 Enviando noticias de la jornada " + matchday + "...");
-        NewsFeeder.sendNewsForMatchday(matchday);
-        System.out.println("✅ Envío completado.");
+        long testPeriod = 5*60*1000;
+        timer.schedule(task, 0, testPeriod);
     }
 }

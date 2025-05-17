@@ -9,7 +9,7 @@ public class Match implements Serializable {
     private String homeTeam;
     private String awayTeam;
     private String matchDate;
-    private int matchday;
+    private final int matchday;
     private String league;
 
     public Match(String matchId, String homeTeam, String awayTeam, String matchDate, int matchday, String league) {

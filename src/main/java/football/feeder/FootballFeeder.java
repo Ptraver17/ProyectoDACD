@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.jms.*;
 import org.apache.activemq.ActiveMQConnectionFactory;
 
-import javax.jms.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Scanner;

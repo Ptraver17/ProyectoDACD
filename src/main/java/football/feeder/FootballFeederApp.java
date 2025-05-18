@@ -25,7 +25,7 @@ public class FootballFeederApp {
         }
 
         long initialDelay = ChronoUnit.MILLIS.between(now, nextRun);
-        long testPeriod = 5 * 60 * 1000;
+        long testPeriod = 12 * 60 * 60 * 1000;
 
         timer.scheduleAtFixedRate(task, initialDelay, testPeriod);
     }

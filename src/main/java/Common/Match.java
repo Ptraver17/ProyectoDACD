@@ -9,8 +9,11 @@ public class Match implements Serializable {
     private String homeTeam;
     private String awayTeam;
     private String matchDate;
-    private final int matchday;
+    private int matchday;
     private String league;
+
+    public Match() {
+    }
 
     public Match(String matchId, String homeTeam, String awayTeam, String matchDate, int matchday, String league) {
         this.matchId = matchId;
@@ -19,10 +22,6 @@ public class Match implements Serializable {
         this.matchDate = matchDate;
         this.matchday = matchday;
         this.league = league;
-    }
-
-    public Match(String matchId, String homeTeam, String awayTeam, String matchDate, int matchday) {
-        this(matchId, homeTeam, awayTeam, matchDate, matchday, ""); // "" si no se indica
     }
 
     public String getMatchId() {

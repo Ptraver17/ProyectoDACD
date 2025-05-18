@@ -10,6 +10,9 @@ public class NewsItem implements Serializable {
     private String description;
     private String url;
 
+    public NewsItem() {
+    }
+
     public NewsItem(String matchId, String title, String description, String url) {
         this.matchId = matchId;
         this.title = title;
@@ -32,8 +35,9 @@ public class NewsItem implements Serializable {
     public String getUrl() {
         return url;
     }
+
     @Override
-    public String toString(){
+    public String toString() {
         return "NewsItem{" +
                 "matchId='" + matchId + '\'' +
                 ", title='" + title + '\'' +

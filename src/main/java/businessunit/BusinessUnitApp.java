@@ -1,24 +1,25 @@
 package businessunit;
 
-import Common.DatabaseManager;
 import Common.Match;
 import Common.NewsItem;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.type.CollectionType;
 
-import java.util.List;
-import java.util.Scanner;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class BusinessUnitApp {
+    private static final String MATCH_FILE = "eventstore/matches.events";
+    private static final String NEWS_FILE = "eventstore/news.events";
+
     public static void main(String[] args) {
-        DatabaseManager.createTables();
         Scanner scanner = new Scanner(System.in);
         boolean running = true;
 
         while (running) {
-            System.out.println("\n📋 Menú:");
-            System.out.println("1. Ver partidos por liga y jornada");
-            System.out.println("2. Ver noticias por Match ID");
-            System.out.println("3. Salir");
-            System.out.print("Seleccione una opción: ");
+            showMenu();
             String option = scanner.nextLine();
 
             switch (option) {
@@ -35,19 +36,29 @@ public class BusinessUnitApp {
         scanner.close();
     }
 
+    private static void showMenu() {
+        System.out.println("\n📋 Menú:");
+        System.out.println("1. Ver partidos por liga y jornada");
+        System.out.println("2. Ver noticias por Match ID");
+        System.out.println("3. Salir");
+        System.out.print("Seleccione una opción: ");
+    }
+
     private static void showMatchesByLeagueAndMatchday(Scanner scanner) {
         System.out.print("🏆 Ingrese código de liga (PD, PL, SA, BL1, FL1): ");
         String league = scanner.nextLine().toUpperCase();
 
-        System.out.print("🔢 Ingrese el número de jornada: ");
+        System.out.print("🔢 Ingrese número de jornada: ");
         try {
             int matchday = Integer.parseInt(scanner.nextLine());
-            List<Match> matches = DatabaseManager.getMatchesByLeagueAndMatchday(league, matchday);
+            List<Match> matches = readMatchesFromFile().stream()
+                    .filter(m -> m.getLeague().equalsIgnoreCase(league) && m.getMatchday() == matchday)
+                    .collect(Collectors.toList());
 
             if (matches.isEmpty()) {
-                System.out.println("⚠️ No hay partidos para esta liga y jornada.");
+                System.out.println("⚠️ No hay partidos disponibles.");
             } else {
-                System.out.println("\n📅 Partidos de " + league + " - Jornada " + matchday + ":");
+                System.out.println("\n📅 Partidos:");
                 for (Match m : matches) {
                     System.out.println(" - " + m.getMatchId() + ": " + m.getHomeTeam() + " vs " + m.getAwayTeam() + " [" + m.getMatchDate() + "]");
                 }
@@ -61,21 +72,51 @@ public class BusinessUnitApp {
         System.out.print("🆔 Ingrese el Match ID: ");
         String matchId = scanner.nextLine();
 
-        List<NewsItem> newsList = DatabaseManager.getAllNews();
-        boolean found = false;
+        List<NewsItem> newsList = readNewsFromFile().stream()
+                .filter(n -> n.getMatchId().equals(matchId))
+                .collect(Collectors.toList());
 
-        System.out.println("\n📰 Noticias para el partido " + matchId + ":");
-        for (NewsItem news : newsList) {
-            if (news.getMatchId().equals(matchId)) {
-                System.out.println(" - " + news.getTitle());
-                System.out.println("   " + news.getDescription());
-                System.out.println("   " + news.getUrl());
-                found = true;
+        if (newsList.isEmpty()) {
+            System.out.println("⚠️ No hay noticias para este partido.");
+        } else {
+            System.out.println("\n📰 Noticias:");
+            for (NewsItem n : newsList) {
+                System.out.println(" - " + n.getTitle());
+                System.out.println("   " + n.getDescription());
+                System.out.println("   " + n.getUrl());
             }
         }
+    }
 
-        if (!found) {
-            System.out.println("⚠️ No hay noticias asociadas a este partido.");
+    private static List<Match> readMatchesFromFile() {
+        List<Match> matches = new ArrayList<>();
+        ObjectMapper mapper = new ObjectMapper();
+
+        try (BufferedReader reader = new BufferedReader(new FileReader(MATCH_FILE))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                matches.add(mapper.readValue(line, Match.class));
+            }
+        } catch (Exception e) {
+            System.out.println("❌ Error leyendo archivo de partidos: " + e.getMessage());
         }
+
+        return matches;
+    }
+
+    private static List<NewsItem> readNewsFromFile() {
+        List<NewsItem> news = new ArrayList<>();
+        ObjectMapper mapper = new ObjectMapper();
+
+        try (BufferedReader reader = new BufferedReader(new FileReader(NEWS_FILE))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                news.add(mapper.readValue(line, NewsItem.class));
+            }
+        } catch (Exception e) {
+            System.out.println("❌ Error leyendo archivo de noticias: " + e.getMessage());
+        }
+
+        return news;
     }
 }

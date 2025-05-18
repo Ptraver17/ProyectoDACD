@@ -16,7 +16,7 @@ public class NewsFeederApp {
             }
         };
 
-        long testPeriod = 5*60*1000;
+        long testPeriod = 6*60*60*1000;
         timer.schedule(task, 0, testPeriod);
     }
 }

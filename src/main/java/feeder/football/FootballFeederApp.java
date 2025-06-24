@@ -1,4 +1,4 @@
-package football.feeder;
+package feeder.football;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -21,12 +21,13 @@ public class FootballFeederApp {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime nextRun = now.withHour(12).withMinute(0).withSecond(0).withNano(0);
         if (!now.isBefore(nextRun)) {
-            nextRun = now.plusHours(12);
+            nextRun = nextRun.plusHours(12);
         }
 
         long initialDelay = ChronoUnit.MILLIS.between(now, nextRun);
-        long testPeriod = 12 * 60 * 60 * 1000;
+        long period = 12 * 60 * 60 * 1000;
 
-        timer.scheduleAtFixedRate(task, initialDelay, testPeriod);
+        timer.scheduleAtFixedRate(task, initialDelay, period);
     }
 }
+

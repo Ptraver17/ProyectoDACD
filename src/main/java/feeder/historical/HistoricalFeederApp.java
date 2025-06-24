@@ -1,7 +1,7 @@
-package historical.feeder;
+package feeder.historical;
 
-import Common.Match;
-import Common.NewsItem;
+import common.Match;
+import common.NewsItem;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.jsoup.Jsoup;
@@ -27,40 +27,32 @@ public class HistoricalFeederApp {
         ensureFilesExist();
 
         for (String league : LEAGUES) {
-            System.out.println("🏆 Cargando liga: " + league);
-
             for (int matchday = START_MATCHDAY; matchday <= END_MATCHDAY; matchday++) {
-                System.out.println("📦 Jornada " + matchday + " - " + league);
-
                 try {
                     fetchAndSaveMatches(league, matchday);
                     Thread.sleep(2000);
                     fetchAndSaveNews(league, matchday);
                 } catch (Exception e) {
-                    System.out.println("❌ Error en jornada " + matchday + ": " + e.getMessage());
+                    System.out.println("Error en jornada " + matchday + ": " + e.getMessage());
                 }
 
                 try {
                     Thread.sleep(DELAY_MS);
                 } catch (InterruptedException e) {
-                    System.out.println("⏹️ Cancelado por el usuario.");
                     return;
                 }
             }
         }
-
-        System.out.println("✅ Carga histórica completa.");
     }
 
     private static void ensureFilesExist() {
         try {
             File dir = new File("eventstore");
             if (!dir.exists()) dir.mkdirs();
-
             new File(MATCH_FILE).createNewFile();
             new File(NEWS_FILE).createNewFile();
         } catch (Exception e) {
-            System.out.println("❌ Error creando archivos: " + e.getMessage());
+            System.out.println("Error creando archivos: " + e.getMessage());
         }
     }
 
@@ -92,14 +84,12 @@ public class HistoricalFeederApp {
                 writer.println(mapper.writeValueAsString(matchObj));
             }
         }
-
-        System.out.println("✅ Partidos guardados.");
     }
 
     private static void fetchAndSaveNews(String leagueCode, int matchday) throws Exception {
         ObjectMapper mapper = new ObjectMapper();
 
-        try (BufferedReader reader = new BufferedReader(new java.io.FileReader(MATCH_FILE));
+        try (BufferedReader reader = new BufferedReader(new FileReader(MATCH_FILE));
              PrintWriter writer = new PrintWriter(new BufferedWriter(new FileWriter(NEWS_FILE, true)))) {
 
             String line;
@@ -125,14 +115,11 @@ public class HistoricalFeederApp {
                         writer.println(mapper.writeValueAsString(item));
                     }
                 } catch (Exception e) {
-                    System.out.println("⚠️ Error buscando noticias para " + query);
+                    System.out.println("Error buscando noticias para " + query);
                 }
 
                 Thread.sleep(500);
             }
         }
-
-        System.out.println("📰 Noticias guardadas.");
     }
 }
-

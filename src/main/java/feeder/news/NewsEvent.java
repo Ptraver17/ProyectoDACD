@@ -1,8 +1,8 @@
-package Common;
+package feeder.news;
 
 import java.io.Serializable;
 
-public class NewsItem implements Serializable {
+public class NewsEvent implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private String matchId;
@@ -10,10 +10,10 @@ public class NewsItem implements Serializable {
     private String description;
     private String url;
 
-    public NewsItem() {
+    public NewsEvent() {
     }
 
-    public NewsItem(String matchId, String title, String description, String url) {
+    public NewsEvent(String matchId, String title, String description, String url) {
         this.matchId = matchId;
         this.title = title;
         this.description = description;
@@ -38,7 +38,7 @@ public class NewsItem implements Serializable {
 
     @Override
     public String toString() {
-        return "NewsItem{" +
+        return "NewsEvent{" +
                 "matchId='" + matchId + '\'' +
                 ", title='" + title + '\'' +
                 ", description='" + description + '\'' +

@@ -1,4 +1,4 @@
-package news.feeder;
+package feeder.news;
 
 import java.util.Timer;
 import java.util.TimerTask;
@@ -16,7 +16,7 @@ public class NewsFeederApp {
             }
         };
 
-        long testPeriod = 6*60*60*1000;
-        timer.schedule(task, 0, testPeriod);
+        long period = 6 * 60 * 60 * 1000;
+        timer.scheduleAtFixedRate(task, 0, period);
     }
 }

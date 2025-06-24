@@ -1,6 +1,6 @@
-package football.feeder;
+package feeder.football;
 
-import Common.Match;
+import common.Match;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.jms.*;
@@ -22,8 +22,7 @@ public class FootballFeeder {
             connection.setRequestMethod("GET");
             connection.setRequestProperty("X-Auth-Token", API_KEY);
 
-            int responseCode = connection.getResponseCode();
-            if (responseCode != 200) return;
+            if (connection.getResponseCode() != 200) return;
 
             Scanner scanner = new Scanner(connection.getInputStream());
             StringBuilder json = new StringBuilder();
@@ -31,8 +30,7 @@ public class FootballFeeder {
             scanner.close();
 
             ObjectMapper mapper = new ObjectMapper();
-            JsonNode root = mapper.readTree(json.toString());
-            JsonNode matches = root.get("matches");
+            JsonNode matches = mapper.readTree(json.toString()).get("matches");
 
             ConnectionFactory factory = new ActiveMQConnectionFactory(BROKER_URL);
             Connection mqConnection = factory.createConnection();

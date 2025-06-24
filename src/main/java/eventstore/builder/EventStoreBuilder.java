@@ -1,22 +1,26 @@
-package eventstore.builder;
+package eventstore;
 
 import jakarta.jms.*;
 import org.apache.activemq.ActiveMQConnectionFactory;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
+import java.util.HashSet;
+import java.util.Set;
 
 public class EventStoreBuilder {
     private static final String BROKER_URL = "tcp://localhost:61616";
     private static final String FOOTBALL_TOPIC = "football.matches";
     private static final String NEWS_TOPIC = "news.events";
+
     private static final String MATCH_FILE = "eventstore/matches.events";
-    private static final String NEWS_FILE = "eventstore/news.events";
+    private static final String NEWS_CSV_FILE = "eventstore/news.csv";
+
+    private static final Set<String> newsKeys = new HashSet<>();
 
     public static void main(String[] args) {
-        ensureEventFilesExist();
+        ensureStorage();
+
+        loadExistingNewsKeys();
 
         try {
             ConnectionFactory factory = new ActiveMQConnectionFactory(BROKER_URL);
@@ -27,23 +31,20 @@ public class EventStoreBuilder {
 
             Topic footballTopic = session.createTopic(FOOTBALL_TOPIC);
             MessageConsumer footballConsumer = session.createConsumer(footballTopic);
-            footballConsumer.setMessageListener(message -> handleMatchMessage(message));
+            footballConsumer.setMessageListener(EventStoreBuilder::handleMatchMessage);
 
             Topic newsTopic = session.createTopic(NEWS_TOPIC);
             MessageConsumer newsConsumer = session.createConsumer(newsTopic);
-            newsConsumer.setMessageListener(message -> handleNewsMessage(message));
+            newsConsumer.setMessageListener(EventStoreBuilder::handleNewsMessage);
 
-            System.out.println("🎧 EventStoreBuilder escuchando en:");
-            System.out.println(" - " + FOOTBALL_TOPIC);
-            System.out.println(" - " + NEWS_TOPIC);
-
+            System.out.println("EventStoreBuilder escuchando eventos...");
         } catch (Exception e) {
-            System.out.println("❌ Error en EventStoreBuilder: " + e.getMessage());
+            System.out.println("Error en EventStoreBuilder: " + e.getMessage());
             e.printStackTrace();
         }
     }
 
-    private static void ensureEventFilesExist() {
+    private static void ensureStorage() {
         try {
             File dir = new File("eventstore");
             if (!dir.exists()) dir.mkdirs();
@@ -51,45 +52,106 @@ public class EventStoreBuilder {
             File matchFile = new File(MATCH_FILE);
             if (!matchFile.exists()) matchFile.createNewFile();
 
-            File newsFile = new File(NEWS_FILE);
-            if (!newsFile.exists()) newsFile.createNewFile();
-
+            File newsFile = new File(NEWS_CSV_FILE);
+            if (!newsFile.exists()) {
+                try (BufferedWriter writer = new BufferedWriter(new FileWriter(newsFile))) {
+                    writer.write("matchId,title,description,url");
+                    writer.newLine();
+                }
+            }
         } catch (IOException e) {
-            System.out.println("❌ Error creando archivos de eventos: " + e.getMessage());
+            System.out.println("Error creando archivos: " + e.getMessage());
+        }
+    }
+
+    private static void loadExistingNewsKeys() {
+        try (BufferedReader reader = new BufferedReader(new FileReader(NEWS_CSV_FILE))) {
+            String line = reader.readLine(); // skip header
+            while ((line = reader.readLine()) != null) {
+                String[] parts = line.split(",", 2);
+                if (parts.length > 0) {
+                    newsKeys.add(parts[0]);
+                }
+            }
+        } catch (IOException e) {
+            System.out.println("No se pudieron cargar noticias existentes.");
         }
     }
 
     private static void handleMatchMessage(Message message) {
         try {
-            if (message instanceof TextMessage) {
-                String json = ((TextMessage) message).getText();
+            if (message instanceof TextMessage textMessage) {
+                String json = textMessage.getText();
                 appendToFile(MATCH_FILE, json);
-                System.out.println("✅ Partido guardado en archivo.");
+                System.out.println("Partido guardado.");
             }
         } catch (Exception e) {
-            System.out.println("❌ Error procesando partido: " + e.getMessage());
+            System.out.println("Error procesando partido: " + e.getMessage());
         }
     }
 
     private static void handleNewsMessage(Message message) {
         try {
-            if (message instanceof TextMessage) {
-                String json = ((TextMessage) message).getText();
-                appendToFile(NEWS_FILE, json);
-                System.out.println("📰 Noticia guardada en archivo.");
+            if (message instanceof TextMessage textMessage) {
+                String json = textMessage.getText();
+
+                String matchId = extractMatchId(json);
+                if (!newsKeys.contains(matchId)) {
+                    writeNewsToCSV(json, matchId);
+                    newsKeys.add(matchId);
+                    System.out.println("Noticia guardada.");
+                } else {
+                    System.out.println("Noticia ya almacenada. Se omite.");
+                }
             }
         } catch (Exception e) {
-            System.out.println("❌ Error procesando noticia: " + e.getMessage());
+            System.out.println("Error procesando noticia: " + e.getMessage());
         }
     }
 
-    private static void appendToFile(String filePath, String jsonLine) {
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath, true))) {
-            writer.write(jsonLine);
+    private static void writeNewsToCSV(String json, String matchId) {
+        try {
+            String title = extractJsonField(json, "title");
+            String description = extractJsonField(json, "description");
+            String url = extractJsonField(json, "url");
+
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter(NEWS_CSV_FILE, true))) {
+                writer.write(escape(matchId) + "," + escape(title) + "," + escape(description) + "," + escape(url));
+                writer.newLine();
+            }
+        } catch (IOException e) {
+            System.out.println("Error escribiendo noticia en CSV.");
+        }
+    }
+
+    private static String escape(String text) {
+        if (text == null) return "";
+        return "\"" + text.replace("\"", "'") + "\"";
+    }
+
+    private static String extractMatchId(String json) {
+        return extractJsonField(json, "matchId");
+    }
+
+    private static String extractJsonField(String json, String field) {
+        try {
+            int start = json.indexOf("\"" + field + "\"");
+            if (start == -1) return "";
+            int colon = json.indexOf(":", start);
+            int quote1 = json.indexOf("\"", colon + 1);
+            int quote2 = json.indexOf("\"", quote1 + 1);
+            return json.substring(quote1 + 1, quote2);
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
+    private static void appendToFile(String path, String line) {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(path, true))) {
+            writer.write(line);
             writer.newLine();
         } catch (IOException e) {
-            System.out.println("❌ Error escribiendo en archivo: " + filePath);
-            e.printStackTrace();
+            System.out.println("Error escribiendo en archivo: " + path);
         }
     }
 }
